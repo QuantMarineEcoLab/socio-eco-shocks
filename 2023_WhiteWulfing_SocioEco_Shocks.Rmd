@@ -1,0 +1,728 @@
+---
+editor_options:
+  chunk_output_type: console
+output:
+  pdf_document:
+    citation_package: natbib
+    keep_tex: yes
+  fig_caption: yes
+  html_document:
+    df_print: paged
+number_sections: no
+bibliography: [DISES.bib, packages.bib, whitebib.bib]
+csl: ecological-complexity.csl
+header-includes: \usepackage{float} \usepackage{setspace}\doublespacing \usepackage[round]{natbib} \usepackage{amsmath} \bibpunct[; ]{(}{)}{,}{a}{}{,} \usepackage{lineno}
+---
+
+\begin{center}
+	
+\textbf{\Large Extreme events and coupled socio-ecological systems}
+	
+\textsc{Easton R. White*, Sophie Wulfing}
+\vspace{3 mm}
+
+\normalsize{\indent Department of Biological Sciences, University of New Hampshire, 03824, NH, USA}
+
+
+$\text{*}$Corresponding author (Easton.White@unh.edu)
+
+\end{center}
+
+\vspace{3 mm}
+
+
+
+
+
+
+```{r load_packages,echo=F,warning=F,message=F}
+if (!require("pacman",character.only = TRUE))
+  {
+    install.packages("pacman",dep=TRUE)
+    if(!require("pacman",character.only = TRUE)) stop("Package not found")
+  }
+
+pacman::p_load(patchwork, dplyr, tidyr, ggplot2,stringr,knitr,tidyquant,ggpubr,viridis,deSolve)
+
+# Default chunk behavior
+knitr::opts_chunk$set(echo = FALSE,warning = FALSE, message = FALSE, tidy.opts=list(width.cutoff=60),tidy=TRUE)
+
+theme_qmel <- function(){
+  theme_classic() + theme(legend.position = 'none',panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),axis.text=element_text(size=8),
+        axis.title=element_text(size=14)) 
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\linenumbers
+
+# Abstract
+
+Rare, but potentially impactful, extreme events in socio-ecological systems (SES) can trigger significant consequences. The scarcity of theoretical frameworks for such events in SES is due to data limitations and difficulty in building coupled SES models. We explore the effect of extreme events on coupled socio-ecological systems using two stylized case studies: harvesting of old-growth forests and coral reef fisheries. We found that extreme events alter the long-term and transient dynamics of the systems. We identify counter-intuitive situations where the degradation of forests or coral habitat can prevent extinction through social dynamics feedback. Management outcomes show maximum variability at intermediate disturbance frequencies, complicating predictions of ecological recovery. We also found that initial conditions significantly influence system responses to shocks. Lastly, we found that shocks to the ecological subsystem had far greater consequences than those that occurred in on the social side. Our work lays a foundation for future studies on extreme events in socio-ecological dynamics, highlighting the complexities of predicting coupled system responses to shocks.
+
+\textbf{Keywords:} human-environment model, fisheries, forestry, shock, disturbance, extreme event
+
+# Introduction 
+
+Socio-environmental systems (SES) consist of linked human communities and natural ecosystems embedded within broader social and economic systems, governance regimes, and environmental contexts [@Ostrom2009]. Because of linkages between human and environmental subsystems, SES are potentially vulnerable to unexpected and severe changes in both socioeconomic and environmental conditions. A central question in socio-environmental systems research is predicting how SESs will respond to these shocks, and understanding what characteristics of a particular system, and of a particular shock, determine the system’s ability to resist and recover effectively [@Schoon2012].  
+
+There is no standard definition for an extreme event, but such definitions typically include a notion of how a particular metric falls within the tails of its historic statistical distribution [@Aoki2022]. Here, we refer to shocks, extreme events, and disturbances interchangeably, but related terms are also often used in the literature, e.g., black-swan events, catastrophes, or perturbations [@Anderson2017;@Aven2013;@Lande1993]. There are several different properties that characterize any given shock event, including duration, magnitude, and frequency. For example, @patrick2022 examined tropical cyclones of differing intensities to assess how they affected various taxa. In addition, the properties of shocks can also change over time. A extreme event can also occur within certain sub-systems of a larger system, i.e. shocks that may be directed at either the social component of the system, the environmental component of the system, or both [@Gephart2016;@Gephart2017]. Shocks to the environmental attributes of the system, such as a disease or hypoxia event, may affect the availability of given harvested resource, while shocks to the social attributes of the system, such as the COVID-19 pandemic or an economic recession, may affect the magnitude or frequency of harvesting activities [@Hughes2018;@Gephart2017;@White2021]. Collectively, the loss of sources of income and sustenance from harvesting creates important challenges for local communities that may compromise their livelihoods and well-being [@Andrews2021;@Colburn2016a]. Conversely, an ecological shock, such as a marine heatwave, might affect an ecological system directly, but affect harvesting only indirectly [@Cheung2020].
+
+Ecological systems are regularly exposed to anthropogenic and natural shocks, such as oil spills, hurricanes, extreme temperatures, and economic recessions [@Bender2010a;@McCrea-Strub2011a;@Hughes2018;@Smee2020]. Systems with direct harvesting of natural resources, such as forestry or fisheries systems, couple a social system, including harvesters, to the environment via harvesting and ecosystem services [@Folke2005]. Inherent linkages and feedbacks in these coupled SES can cause complex dynamics, including oscillations [@Oraby2014;@Bauch2016;@Thampi2018]. Each of these interactions plays out across several spatial scales in the context of an existing, and evolving, legal, social, and economic contexts that can modify human behaviors and consequently the SES as a whole [@Refulio-Coronado2021].
+
+Coral reef fisheries are an ideal case study for understanding shocks and socio-ecological systems more generally. Coral reef fisheries are known for their tight coupling between fishers, reef fish, and the habitat-forming benthic community [@Cinner2013;@Gurney2019;@Darling2019]. Coral reefs are also exposed to numerous shock events, including extreme temperatures, hurricanes, oil spills, destructive fishing practices [@Fabina2015;@Norstro2015;@Lamb2016;@Hughes2018]. Early theoretical work on modeling coral reefs highlighted the impact of shock events [@Mumby2007]. This work highlighted the importance of alternative stable states, and consequently hysteresis, in determining system dynamics after a system shock [@Mumby2007]. @Blackwood2012 built on this work by explicitly including parrotfish population dynamics and fishing. Parrotfish are an important grazer of algae, which then prevents the overgrowth of macroalgae on coral reefs. @Blackwood2012 also added the "social" component to these models indirectly by including a term for fishing of parrotfish and found that reducing fishing pressure could allow coral to recover after coral bleaching. More directly, @Thampi2018 focused specifically on how social dynamics affected coral reef systems. They found that the coupled system often acted in unanticipated ways compared to the ecological system alone. This included long boom-bust cycles in coral cover given changes in human opinion. Related work on generalized socio-ecological modeling has shown that stochasticity can induce longer mean times to extinction; this is in contrast to most ecological literature [@Jnawali2022]. However, this work has focused on a non-mechanistic sources of small noise that affect the whole system. Despite all of these efforts, there has been limited work on the interaction between large shock events and socio-ecological dynamics.
+
+
+In this paper, we examine the effect of different extreme events on socio-ecological systems. As a case study, we build on previously-developed socio-ecological models of old growth forests and Caribbean coral reef fisheries. These models include explicitly couple together ecological dynamics and human opinions on harvesting versus conservation. We use these models to address four specific questions: 1) how does a shock in one part of the socio-ecological system propagate through the rest of the system, 2) how do disturbance characteristics (magnitude, duration) affect the overall system dynamics, 3) how do the initial conditions affect the influence of disturbances on these systems, and 4) how sensitive are the dynamics to changes in the parameter values.
+
+
+# Methods
+
+## Old growth forests 
+
+We use a stylized model of forest-harvester dynamics developed previously [@Bauch2016]. The model explicitly links forest ($F$) population dynamics with the fraction of the population engaged in conservation ($x$) as opposed to harvesting. 
+
+\begin{equation}
+\frac{dF}{dt} = R F (1-F) - \frac{h (1-x) F}{F + s} - \mu F
+\end{equation}
+
+\begin{equation}
+\frac{dx}{dt} = k x (1-x) \left[ d (2x-1) + \frac{1}{F+c} - w \right]
+\end{equation}
+
+The forest equation is governed by simple logistic growth, including $R$ as the intrinsic growth rate, $h$ as the harvesting efficiency, and $s$ controlling the shape of the function between harvest rate and the forest population size. As the fraction of non-conservationists ($1-x$) increases, harvesting also increases and the forest decreases. The fraction of conservationists ($x$) is the replicator equation [@Nowak2006] where $k$ is the interaction rate between people, $d$ is the social norm strength, $c$ is the perceived value of the forest, and $w$ is the cost of conservation. 
+
+Unlike previous work [@Bauch2016], we also include a term $\mu$ that explicitly accounts for increased forest mortality as a result of extreme events. In each year of the model, we use a binomial distribution with a set probability to determine the presence or absence of a shock event. 
+
+
+@Bauch2016 fit the above model, without shocks, to old growth forest cover time series in the Pacific Northwest United States (citation) and opinion on conservation opinion in the state of Oregon (citation). In their supplementary material, they describe this model fitting procedure. 
+
+
+## Caribbean coral reef fisheries
+
+We use the modeling framework developed by Mumby and Hastings 2007, Blackwood et al. 2012, and Thampi et al. 2018. This series of papers went from a coral-macroalgae-turf model to including parrotfish and human behavior. The coupled parrotfish-fisher components of the model are very similar to the old growth forest model above. However, in the coral reef fishery system, humans respond to both coral cover and parrotfish abundance. @Thampi2018 used the following continuous-time model detailing benthic cover of macroalgae ($M$), coral ($C$), and turf algae ($T$) along with parrotfish ($P$) abundance, and the fraction of community members who are conservationists ($x$).   
+
+\begin{equation}
+\frac{dM}{dt} = aMC - \frac{PM}{M+T} + \gamma MT
+\end{equation}
+
+\begin{equation}
+\frac{dC}{dt} = rTC - dC - aMC
+\end{equation}
+
+\begin{equation}
+\frac{dT}{dt} =  \frac{PM}{M+T} - \gamma MT - rTC + dC
+\end{equation}
+
+\begin{equation}
+\frac{dP}{dt} =  sP (1 - \frac{P}{1 - 0.5 C}) - \sigma P (1-x)
+\end{equation}
+
+\begin{equation}
+\frac{dx}{dt} = \kappa x (1-x)(-1 + J(1-C) - \sigma P(1-x) + \phi(2x-1))
+\end{equation}
+
+In this model, coral, macroalgae, and turf algae compete for benthic cover and the sum of the three groups adds to one. Macroalgae grows over coral at rate $a$, over turf at rate $\gamma$, but is consumed by parrotfish according to the term $\frac{PM}{M+T}$. Corals can overgrow turf algae at rate $r$, but decrease from natural mortality $d$ and competition $a$ with macroalgae. Turf algae recolonizing area where macroalgae is consumed by parrotfish and where coral is lost naturally, but decreases with competition from macroalgae and coral.  
+
+Parrotfish dynamics are governed by logistic growth and fishing effort. The parrotfish population has an intrinsic growth rate of $s$ and a carrying capacity that depends on the amount of coral cover: $1 - 0.5 C$. Blackwood et al. 2012 added fishing to this model as a static term at rate $\sigma$. @Thampi2018 followed up this work by allowing the fishing term to depend on the number of fishers ($1-x$) in the population.
+
+The fraction of conservationists ($x$) in the population is determined by the interaction rate ($\kappa$) between conservationists (or non-fishers) and non-conservationists (or fishers), the sensitivity of individuals to coral cover ($J$), the amount of potential parrotfish catch ($\sigma P(1-x)$), and the Injunctive social norms term, $\phi$. The Injunctive social norms term describes the social pressure that an individual feels when they are in the minority regarding whether to fish or be a conservationist. @Thampi2018 describes the full derivation of this model, especially the social equation. 
+
+Similar to our approach in the old growth forest model, we include shocks in the above modeling framework through temporary changes in parameter values. For example, as an ecological disturbance, we increased coral mortality ($d$) during the model simulation. We can control the amount increase in mortality, the timespan of this increase, and the frequency of such an increase to represent the magnitude, duration, and frequency of the shock regime, respectively. Formally, we define $d(t)$ as the coral mortality at time $t$. Similarly, we defined $j(t)$ as the sensitivity of humans to current density of coral cover at time $t$. We modeled the probability of a shock in any given model year as a Binomial distribution.
+
+We specified our model for an idealized coral reef fishery in the Caribbean. Past work [@Mumby2007;@Blackwood2012;@Thampi2018] describe the literature and time series data used to parameterize the model. 
+
+
+
+
+```{r paramtable, results = 'asis', echo = FALSE, eval=F}
+
+giveparams <- data.frame(matrix(, nrow = 10, ncol = 4))
+colnames(giveparams) <- c("Parameter", "Population_1", "Population_2", "Def")
+
+giveparams$Parameter <- c("r", "s", "h", "k", "w", "c", "d", "e", "i", "prop")
+giveparams$Population_1 <- c(params_list[1:10])
+giveparams$Population_2 <- c(params_list[11:20])
+
+giveparams$Def <- c("Fish net growth",
+                    "Supply and demand",
+                    "Harvesting efficiency",
+                    "Social learning rate",
+                    "Conservation cost",
+                    "Rarity valuation",
+                    "Social norm strength (within pop)",
+                    "Fish emigration (from patch)",
+                    "Fish immigration (from opposite patch)",
+                    "Social norm strength (opposite pop)")
+
+knitr::kable(giveparams, format = "latex", booktabs = TRUE, caption = "Parameter values used in this analysis")
+
+```
+
+### Analysis
+
+All model simulations were solved with the deSolve [@deSolve2010] package in R [@R2021]. We specifically studied two types of shocks: ecological and social. The ecological shock was represented by an increase in coral mortality, $d$. This increase in coral mortality could represent coral bleaching or destruction from a hurricane. The increase in the mortality rate is different than simply shifting the system state. For the social shock, we studied decreases in sensitivity to coral cover, $J$. This type of shock could represent an economic recession or an extreme event that takes focus away from the dynamics of the reef.
+
+
+
+```{r echo=FALSE, out.width='100%', fig.cap='Conceptual figure illustrating linkages between the ecological (e.g., fish population) and social (e.g., fishers) systems and disturbances\\label{fig:conceptual}  '}
+knitr::include_graphics('conceptual_figure.png')
+```
+
+
+
+# Results
+
+## Old growth forest harvesting
+
+```{r timeseries_forests, fig.cap = "Old growth forest harvesting model outputs with default parameters (R = 0.03, s = 0.8, k = 0.17, w = 1.3, c = 0.6, d = 0.5, h = 0.075) for a system (a) without or (b) with a moderate level of shocks.\\label{fig:timeseries_forests}"}
+#Make a global list of shock times
+
+Bauch.shocks <- function(times, y, param) { 
+
+  # CHANGE H VALUES HERE
+  with(as.list(c(y, param)), {
+    if(round(times, digits = 0) %in% events){
+      mu <-  0.25
+    }else{mu <-  0}
+    
+    # #Uncomment below to see the weird time thing that's happening
+    # cat("h:", h, "  t:", round(times, digits = 0), "\n") 
+
+    dPdt <- R * P * (1-P) - (h * P * (1-X))/(P+s) - mu*P
+    dXdt <- k * X * (1-X) * (d*(2*X-1) + 1/(P+c) - w)
+    return(list(c(dPdt, dXdt))) 
+
+  })} 
+
+## No shocks
+
+## CHANGE HERE TO CHANGE SCENARIO
+end_time <- 300
+event_prob <- 0
+event_years <- rbinom(end_time, 1, event_prob)
+events <- which(event_years==1)
+
+param <- c(R = 0.03, s = 0.8, k = 0.17, w = 1.3, c = 0.6, d = 0.5,  mu=0, h = 0.075)
+y <- c(P = 0.5, X = .75) 
+
+times <- seq(from = 0, to = end_time, by = 1)
+out2 <- as.data.frame(ode(func = Bauch.shocks, y = y, times = times, parms = param))
+
+no_shocks <- out2 %>%
+  rename(`Forest Cover` = P, `Fraction conservationists` = X) %>%
+  gather(variable,value,-time) %>%
+  ggplot(aes(x=time,y=value,color=variable, linetype=variable))+
+  geom_line(size=2)+
+  theme_qmel() + 
+  labs(x='',y='',color='', linetype='') + ylim(0,1.1) 
+
+
+set.seed(123)
+## With shocks
+event_prob <- 0.05
+event_years <- rbinom(end_time, 1, event_prob)
+events <- which(event_years==1)
+
+out2 <- as.data.frame(ode(func = Bauch.shocks, y = y, times = times, parms = param))
+
+with_shocks <- out2 %>%
+  rename(`Forest Cover` = P, `Fraction conservationists` = X) %>%
+  gather(variable,value,-time) %>%
+  ggplot(aes(x=time,y=value,color=variable, linetype=variable))+
+  geom_line(size=2)+
+  geom_vline(xintercept = events, color='grey') +
+  theme_qmel() + 
+  labs(x='',y='',color='', linetype='') + ylim(0,1.1) 
+
+
+forest_ts=ggarrange(no_shocks,with_shocks, ncol=2, nrow=1, common.legend = TRUE, labels=c('(a) No shocks','(b) Shocks present'),label.x = 0.05, label.y = 1.05,font.label='plain',align = "v")
+annotate_figure(forest_ts,bottom = text_grob("Time (years)", color = "black",hjust = 1.3,vjust=-1, x = 0.7, size = 14),left = text_grob("Population", color = "black", rot = 90,size=14,vjust=2,hjust=0.4)) 
+
+
+```
+
+
+Without shock events or variability, the original model from @Bauch2016 reaches a simple equilibrium point with high forest cover and high conservation opinion (Fig. \ref{fig:timeseries_forests}). However, if there are shocks, in the form of increased forest mortality, the decrease in forest cover can spur an increase in conservationists. This feedback then prevents forest extinction and maintains a high fraction of conservationists (Fig. \ref{fig:timeseries_forests}). As we increased the probability of shock events (i.e., the shock frequency), we observed increases in the fraction of conservationists (Fig. \ref{fig:shocks_forests}). However, the forest cover peaked at intermediate levels of shock frequencies (Fig. \ref{fig:shocks_forests}). Thus, even at high levels of conservation support, forests could not be maintained in the presence of frequent shock events.  
+
+```{r, shocks_forests, fig.cap='Mean forest cover and the fraction of conservationists for different probabilities of shocks occuring using default parameters from figure 2 across 100 trials for each shock probability level. \\label{fig:shocks_forests}'}
+
+model_output <- read.csv(file='model_output/forest_model_with_shocks.csv',header=TRUE)
+
+ggplot(model_output, aes(x=`Shock.probability`,y=value, color=variable, linetype=variable))+
+  geom_line(size=2)+
+  theme_qmel() + theme(legend.position = 'top') + 
+  labs(x='Shock probability',y='Mean (population)', color='',linetype='') + ylim(0,1) 
+
+
+
+```
+
+
+
+## Caribbean coral reef fisheries
+
+```{r timeseries, fig.cap = 'Time series without (left) and with (right) shock events present. The upper panels represent the ecological system (macroalgae, coral, and turf cover which sums to one and parrotfish abundance) and the bottom panels reprsent the social system trajectory. Default parameter values: $a = 0.1$, $\\gamma = 0.8$, $r = 1.0$, $d = 0.44$, $s = 0.49$, $\\kappa= 1.014$, $j=1.68$, $\\sigma = 0.5$, $\\phi = 0.2.$ \\label{fig:timeseries}'}
+# Conceptual figure
+require(deSolve)
+# Set up model
+coupled_model <- function(Time, State, Pars) {
+  with(as.list(c(State, Pars)), {
+    
+    import <- input(Time)# <---- here
+    
+    if (dist_type==1){ # this is the ecological disturbance
+    
+      dM <-  a*M*C - (P*M)/(M+T) + gamma*M*T
+      if (import==0){
+        dC <-  r*T*C - d*C - a*M*C
+        dT <- (P*M)/(M+T) - gamma*M*T - r*T*C + d*C
+      }else{
+      dC <-  r*T*C - (dist_mag)*d*C - a*M*C
+      dT <- (P*M)/(M+T) - gamma*M*T - r*T*C + (dist_mag)*d*C
+      }
+      dP <- s*P*(1 - P/(1-0.5*C)) - sigma*P*(1 - X)
+      dX <- kappa*X*(1 - X)*(-1 + j*(1 - C) - sigma*P*(1 - X) + phi*(2*X - 1)) 
+      
+      res <- c(dM,dC,dT,dP,dX)
+      return(list(res,signal=import))
+    
+    }else if (dist_type==2){ # this is the social disturbance
+      
+      dM <-  a*M*C - (P*M)/(M+T) + gamma*M*T
+      dC <-  r*T*C - d*C - a*M*C
+      if (import==0){
+        dX <- kappa*X*(1 - X)*(-1 + j*(1 - C) - sigma*P*(1 - X) + phi*(2*X - 1)) 
+      }else{
+        dX <- kappa*X*(1 - X)*(-1 + j*(1 - C) - (1/dist_mag)*sigma*P*(1 - X) + phi*(2*X - 1)) 
+      }
+      dT <- (P*M)/(M+T) - gamma*M*T - r*T*C + d*C
+      dP <- s*P*(1 - P/(1-0.5*C)) - sigma*P*(1 - X)
+      
+      
+      res <- c(dM,dC,dT,dP,dX)
+      return(list(res,signal=import))
+    }
+    
+  })
+}
+
+
+my_pal <- viridisLite::mako(5,end=0.8)
+yini  <- c(M = 0.3, C = 0.6, T = 0.1, P = 0.2, X = 0.5)
+times <- seq(0, 50, by = 0.1)
+
+par(mfcol=c(2,3),mar=c(2, 4, 1, 0.5),oma=c(2,2,1,1))
+
+
+# Ecological disturbance  
+  pars <- c(a = 0.1, gamma = 0.8, r = 1.0, d = 0.44, s = 0.49, kappa= 1.014, j=1.68, sigma = 0.5, phi = 0.2, dist_mag = 1, dist_freq = 0, dist_len = 2, dist_type = 1)
+  
+  # Set up disturbance timing
+  dist_freq <- as.numeric(pars[names(pars)=='dist_freq'])
+  signal <- data.frame(times = times, import = rep(0, length(times)))
+  events<- rbinom(length(unique(trunc(times))),size=1,dist_freq)
+  #events <- c(events,events+1,events+1)
+  signal$import[trunc(times) %in% 10] <- 0
+  input <- approxfun(signal, rule = 2)
+  
+  # Run model
+  out   <- ode(yini, times, coupled_model, pars)
+  
+  matplot(out[ , 1], out[ , 2:5], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,lty=1:4,cex.lab=1.4, col=my_pal[1:4])
+  mtext("Percent cover", side=2, line=2.5, outer =FALSE,cex=1.2)
+  mtext("No shock", side=3, line=0, outer =FALSE,cex=1.3)
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+legend('topleft', legend = c('macroalgae','coral reef','turf algae','parrotfish'), col=my_pal[1:4], lty=c(1,2,3,4), cex = 0.9)
+
+matplot(out[ , 1], out[ , 6], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,cex.lab=1.4,col=my_pal[5])
+mtext("Fraction conservationists", side=2, line=2.5, outer = FALSE,cex = 1.2)
+
+
+
+
+  pars <- c(a = 0.1, gamma = 0.8, r = 1.0, d = 0.44, s = 0.49, kappa= 1.014, j=1.68, sigma = 0.5, phi = 0.2, dist_mag = 10, dist_freq = 0, dist_len = 2, dist_type = 1)
+  
+  # Set up disturbance timing
+  dist_freq <- as.numeric(pars[names(pars)=='dist_freq'])
+  signal <- data.frame(times = times, import = rep(0, length(times)))
+  events<- rbinom(length(unique(trunc(times))),size=1,dist_freq)
+  #events <- c(events,events+1,events+1)
+  signal$import[trunc(times) %in% c(10)] <- 1
+  input <- approxfun(signal, rule = 2)
+  
+  # Run model
+  out   <- ode(yini, times, coupled_model, pars)
+  
+  matplot(out[ , 1], out[ , 2:5], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,lty=1:4,cex.lab=1.4, col=my_pal[1:4])
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+mtext("Shock", side=3, line=0, outer =FALSE,cex=1.3)
+
+matplot(out[ , 1], out[ , 6], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1), col=my_pal[5],las=1,cex.lab=1.4)
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+
+
+mtext("Time (years)", side=1, line=0.8, outer =TRUE,cex = 1.3)
+
+
+
+### Repeated shocks
+
+  pars <- c(a = 0.1, gamma = 0.8, r = 1.0, d = 0.44, s = 0.49, kappa= 1.014, j=1.68, sigma = 0.5, phi = 0.2, dist_mag = 10, dist_freq = 0, dist_len = 2, dist_type = 1)
+  
+  # Set up disturbance timing
+  dist_freq <- as.numeric(pars[names(pars)=='dist_freq'])
+  signal <- data.frame(times = times, import = rep(0, length(times)))
+  events<- rbinom(length(unique(trunc(times))),size=1,dist_freq)
+  #events <- c(events,events+1,events+1)
+  signal$import[trunc(times) %in% c(10,20,40,55,80)] <- 1
+  input <- approxfun(signal, rule = 2)
+  
+  # Run model
+  out   <- ode(yini, times, coupled_model, pars)
+  
+  matplot(out[ , 1], out[ , 2:5], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,lty=1:4,cex.lab=1.4, col=my_pal[1:4])
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+mtext("Repeated shocks", side=3, line=0, outer =FALSE,cex=1.3)
+
+matplot(out[ , 1], out[ , 6], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1), col=my_pal[5],las=1,cex.lab=1.4)
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+
+
+mtext("Time (years)", side=1, line=0.8, outer =TRUE,cex = 1.3)
+
+
+
+```
+
+
+
+
+
+```{r mainresult, fig.cap = 'The relationship between time to coral extinction (when the coral cover drops below a certain threshold) and shock magnitude and frequency for (left) an ecological shock, with an increase in coral mortality, and (right) a social shock, with a decrease in sensitivity to coral cover. The grey areas indicate regions where extinction never occured\\label{fig:mainresult}.'}
+# Conceptual figure
+
+dist_vec <- read.csv(file = 'model_output/all_scenarios.csv', header = T)
+
+#dist_vec$time_to_extinction[is.na(dist_vec$time_to_extinction)]=500
+
+dist_vec <- dist_vec %>%
+  #filter(is.na(time_to_extinction)==F) %>%
+  group_by(dist_mag_vec, dist_freq_vec, dist_type_vec) %>%
+  summarize(coral_cover_sd = sd(coral_cover),
+            coral_cover = mean(coral_cover),
+            time_to_extinction_sd = sd(time_to_extinction),
+            time_to_extinction = mean(time_to_extinction))
+
+
+#require(ggplot2)
+#ggplot(data = dist_vec, aes(x=dist_mag_vec, y=coral_cover)) + 
+#  geom_point() + theme_classic() + facet_wrap(~dist_type_vec)
+new_labels=c("1" = 'ecological', "2" = 'social')
+cover_eco <- ggplot(data =  dist_vec , aes(x=dist_mag_vec, y=dist_freq_vec,fill=coral_cover)) + 
+ geom_raster(interpolate = TRUE) + theme_classic() + facet_grid(~dist_type_vec, scales = "free", labeller = labeller(dist_type_vec=new_labels)) + ylab(' ') + xlab(' ') + labs(fill='Coral cover') + scale_fill_viridis_c() 
+
+#cover_soc <- ggplot(data =  dist_vec %>% filter(dist_type_vec==2), aes(x=dist_mag_vec, y=dist_freq_vec,fill=coral_cover)) + 
+# geom_raster(interpolate = TRUE) + theme_classic() + facet_grid(~dist_type_vec, scales = "free", labeller = labeller(dist_type_vec=new_labels)) + ylab('Shock frequency') + xlab('Shock magnitude') + labs(fill='Coral cover') + scale_fill_viridis_c()
+
+ext_eco <- ggplot(data =  dist_vec, aes(x=dist_mag_vec, y=dist_freq_vec,fill=time_to_extinction)) + 
+ geom_raster(interpolate = TRUE) + theme_classic() + facet_grid(~dist_type_vec, scales = "free", labeller = labeller(dist_type_vec=new_labels)) + ylab(' ') + xlab(' ') + labs(fill='Extinction time') + scale_fill_viridis_c()
+
+# ext_soc <- ggplot(data =  dist_vec %>% filter(dist_type_vec==2), aes(x=dist_mag_vec, y=dist_freq_vec,fill=time_to_extinction)) + 
+#  geom_raster(interpolate = TRUE) + theme_classic() + facet_grid(~dist_type_vec, scales = "free", labeller = labeller(dist_type_vec=new_labels)) + ylab('Shock frequency') + xlab('Shock magnitude') + labs(fill='Extinction time') + scale_fill_viridis_c()
+
+#plot(dist_vec$dist_mag_vec[dist_vec$dist_freq_vec==0.01 & dist_vec$dist_type_vec==1],dist_vec$time_to_extinction[dist_vec$dist_freq_vec==0.01 & dist_vec$dist_type_vec==1])
+figure=ggarrange(cover_eco,ext_eco, ncol=1, nrow=2, common.legend = FALSE, labels=c('(a)','(b)'),label.x = 0.85, label.y = 0.99,font.label='plain',align = "v")
+annotate_figure(figure,bottom = text_grob("Shock magnitude", color = "black",hjust = 1.3,vjust=-1, x = 0.6, size = 14),left = text_grob("Shock frequency", color = "black", rot = 90,size=14,vjust=2,hjust=0.4))
+```
+
+
+In line with with our expectations, the mean cover coral through simulations was lower as shock events increased in magnitude or frequency (Fig. \ref{fig:mainresult}). For our default parameter values, with no disturbances, coral cover drops below 1%, our threshold for extinction (Figs. \ref{fig:timeseries}, \ref{fig:mainresult}). We see that the presence of shocks, in the form of increased coral mortality, can prevent corals from going extinct (Figs. \ref{fig:timeseries}, \ref{fig:mainresult}). This happens as a result of an increase in conservation following a shock event. If instead a shock occurs on the social side, in the form of decreased sensitivity in coral cover, both coral cover and time to extinction decreases with higher shock magnitude or frequency. 
+
+```{r inicond, fig.cap = 'The effect of different initial conditions, specifically levels of coral cover and the fraction of conservationists, on system dynamics in the presence of an ecological shock.\\label{fig:inicond}.'}
+# Conceptual figure
+require(deSolve)
+# Set up model
+
+my_pal <- viridisLite::mako(5,end = 0.8)
+
+yini  <- c(M = 0.5, C = 0.2, T = 0.3, P = 0.2, X = 0.75)
+times <- seq(0, 50, by = 0.1)
+
+par(mfcol=c(2,4),mar=c(2, 4, 1, 0.5),oma=c(2,2,1,1))
+
+
+# Ecological disturbance  
+  pars <- c(a = 0.1, gamma = 0.8, r = 1.0, d = 0.44, s = 0.49, kappa= 1.014, j=1.68, sigma = 0.5, phi = 0.2, dist_mag = 3, dist_freq = 0, dist_len = 2, dist_type = 1)
+  
+  # Set up disturbance timing
+  dist_freq <- as.numeric(pars[names(pars)=='dist_freq'])
+  signal <- data.frame(times = times, import = rep(0, length(times)))
+  events<- rbinom(length(unique(trunc(times))),size=1,dist_freq)
+  #events <- c(events,events+1,events+1)
+  signal$import[trunc(times) %in% 10] <- 1#0
+  input <- approxfun(signal, rule = 2)
+  
+  # Run model
+  out   <- ode(yini, times, coupled_model, pars)
+  
+  matplot(out[ , 1], out[ , 2:5], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,lty=1:4,cex.lab=1.4,col=my_pal[1:4])
+  mtext("Percent cover", side=2, line=2.5, outer =FALSE,cex=1.2)
+  mtext("Low coral and high X", side=3, line=0, outer =FALSE,cex=0.8)
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+
+
+matplot(out[ , 1], out[ , 6], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),col=my_pal[5],las=1,cex.lab=1.4)
+mtext("Fraction conservationists", side=2, line=2.5, outer = FALSE,cex = 1.2)
+
+legend(x = 5,y=0.6, legend = c('macroalgae','coral reef','turf algae','parrotfish'),  col=my_pal[1:4], lty=c(1,2,3,4))
+
+  # Low both
+yini  <- c(M = 0.5, C = 0.2, T = 0.3, P = 0.2, X = 0.25)
+
+  
+  # Run model
+  out   <- ode(yini, times, coupled_model, pars)
+  
+  matplot(out[ , 1], out[ , 2:5], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,lty=1:4,cex.lab=1.4,col=my_pal[1:4])
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+mtext("Low coral and low X", side=3, line=0, outer =FALSE,cex=0.8)
+matplot(out[ , 1], out[ , 6], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),col=my_pal[5],las=1,cex.lab=1.4)
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+
+# High both
+yini  <- c(M = 0.1, C = 0.8, T = 0.1, P = 0.2, X = 0.75)
+  
+  # Run model
+  out   <- ode(yini, times, coupled_model, pars)
+  
+  matplot(out[ , 1], out[ , 2:5], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,lty=1:4,cex.lab=1.4,col=my_pal[1:4])
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+mtext("High coral and high X", side=3, line=0, outer =FALSE,cex=0.8)
+matplot(out[ , 1], out[ , 6], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),col=my_pal[5],las=1,cex.lab=1.4)
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+# high coral, low X
+yini  <- c(M = 0.1, C = 0.8, T = 0.1, P = 0.2, X = 0.25)
+  
+  # Run model
+  out   <- ode(yini, times, coupled_model, pars)
+  
+  matplot(out[ , 1], out[ , 2:5], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),las=1,lty=1:4,cex.lab=1.4,col=my_pal[1:4])
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+mtext("High coral and low X", side=3, line=0, outer =FALSE,cex=0.8)
+matplot(out[ , 1], out[ , 6], type = "l", xlab = "", ylab = "",main = "", lwd = 2,ylim=c(0,1),col=my_pal[5],las=1,cex.lab=1.4)
+abline(v=signal$times[signal$import==1],col=rgb(0.5,0.5,0.5,0.2))
+
+
+
+
+
+mtext("Time (years)", side=1, line=0.8, outer =TRUE,cex = 1.3)
+
+
+
+```
+
+We also see that the system initial conditions interacts with a shock event to determine overall system dynamics (Fig. \ref{fig:inicond}). With our default set of parameters, high initial coral cover actually led to cover cover dropping to zero after a shock event (Fig. \ref{fig:inicond}). This is driven by a decrease in the fraction of conservationists as a result of the high coral cover. Conversely, coral cover recovered after a shock if the fraction of conservationists was high at the time of the shock event (Fig. \ref{fig:inicond}).
+
+
+
+```{r variability, fig.cap = 'Coefficient in cover cover for different levels of shock frequency and magnitude for both (left) ecological and (right) social shocks.\\label{fig:variability}'}
+# Conceptual figure
+
+dist_vec <- read.csv(file = 'model_output/all_scenarios.csv', header = T)
+
+dist_vec <- dist_vec %>%
+  #filter(is.na(time_to_extinction)==F) %>%
+  group_by(dist_mag_vec, dist_freq_vec, dist_type_vec) %>%
+  summarize(coral_cover_sd = sd(coral_cover),
+            coral_cover = mean(coral_cover),
+            time_to_extinction_sd = sd(time_to_extinction),
+            time_to_extinction = mean(time_to_extinction))
+
+new_labels=c("1" = 'ecological', "2" = 'social')
+ggplot(data =  dist_vec, aes(x=dist_mag_vec, y=dist_freq_vec,fill=coral_cover_sd/coral_cover)) + 
+ geom_raster(interpolate = TRUE) + theme_classic() + facet_wrap(~dist_type_vec, scales = "free", labeller = labeller(dist_type_vec=new_labels)) + ylab('Shock frequency') + xlab('Shock magnitude') + labs(fill = 'CV (coral cover)') + scale_fill_viridis_c()
+
+```
+
+
+We also see that the variability in both coral cover and time to extinction generally increased with higher shock frequencies and magnitude (Fig. \ref{fig:variability}). However, variability in coral peaked at an intermediate shock magnitude for direct shocks to coral mortality. Conversely, shocks to the social system led always led to an increase in coral cover variability (Fig. \ref{fig:variability}).
+
+
+```{r paretto, fig.cap = 'Coral cover versus total fisheries catch for different types (ecological versus social) shocks and varying shock probabilities and magnitudes.\\label{fig:paretto}.'}
+
+dist_vec <- read.csv(file = 'model_output/all_scenarios.csv', header = T)
+
+dist_vec <- dist_vec %>%
+  #filter(dist_mag_vec>1, dist_freq_vec>0.01) %>%
+  group_by(dist_mag_vec, dist_freq_vec, dist_type_vec,) %>%
+  summarize(coral_cover_sd = sd(coral_cover),
+            coral_cover = mean(coral_cover),
+            time_to_extinction_sd = sd(time_to_extinction),
+            time_to_extinction = mean(time_to_extinction),
+            catch = mean(catch),
+            catch_sd = sd(catch))
+
+new_labels=c("1" = 'ecological', "2" = 'social')
+
+ggplot(data =  dist_vec , aes(x=catch, y=coral_cover,color=dist_mag_vec-1,size=dist_freq_vec-0.001)) + 
+  geom_point(alpha=0.6) + theme_classic() + facet_wrap(~dist_type_vec, labeller = labeller(dist_type_vec=new_labels)) + ylab('Coral cover') + xlab('Total catch') + labs(color = 'Shock magnitude', size='Shock probability') + scale_color_viridis_c()
+
+```
+
+
+We also examined how disturbances alter potential tradeoffs between conservation and harvesting. Specifically, we compared different regimes of ecological and social shocks to see how each affected overall coral cover and total fisheries catch. In general, higher coral cover meant higher total catch and vice versa (Fig. \ref{fig:paretto}). There was far less variation in both coral cover and catch in terms of the social shock as a short term decrease in sensitivity to coral loss ($j$) still allowed the coral, and ecological system more generally, to recover quickly (Fig. \ref{fig:paretto}).In addition, there was generally higher coral cover and total catch for cases with lower shock magnitudes and frequencies. However, for the ecological shock (i.e., an increase in coral mortality) had a maximum coral cover at intermediate shock frequencies (Fig. \ref{fig:paretto}). 
+
+
+
+
+
+
+
+# Discussion
+
+We found that the interaction of extreme events and socio-ecological dynamics can produce counter-intuitive outcomes. Specifically, an extreme event that causes an increase in forest or coral mortality would normally cause the forest or coral to decrease with a long time to recover, if at all. However, when coupled with a social model, a large decrease in forest or coral cover led to an increase in the fraction of conservationists in the population. For the coral system, the increase in conservationists led to a reduction in fishing pressure allowing the parrotfish population to increase and increase grazing on coral competitors (Fig. \ref{fig:mainresult}). Even with a relatively simple model of coral reef fisheries, we show that the system dynamics, especially transient dynamics, are highly dependent on the current system state, the disturbance regime, and the timescales considered.  
+
+
+
+Our findings show that accounting for extreme events in understanding and managing socio-ecological systems is important in predicting how systems may resist or recover from such an event. We found that coral cover always decreased with higher disturbance frequencies and magnitudes (Fig. \ref{fig:mainresult}). This result is important as past work has indicated an increase in severe coral bleaching events [@Hughes2018]. However, we also found that coral persistence, or the time to coral extinction, was higher for intermediate disturbance frequencies and magnitudes (Fig. \ref{fig:mainresult}). The dynamics were affected strongly by both shock frequency and magnitude. This result is in contrast to @Fabina2015, whom used a coral reef ecosystem model, without social dynamics, and explored the consequences of shocks. They found that shock magnitude was more important than frequency for coral persistence. 
+
+We also found that the overall system dynamics, and how the system responded to a disturbance, was highly dependent on initial conditions (Fig. \ref{fig:inicond}). Specifically, we found that coral cover only recovered in systems that had enough conservation support at the time of the disturbance (Fig. \ref{fig:inicond}). In fact, situations with high initial coral cover went extinct because the conservation support eroded quickly and before the shock event (Fig. \ref{fig:inicond}). The sensitivity to initial conditions is in line with past work on socio-ecological dynamics [@Bauch2016;@Thampi2018]. Combined, these findings imply that while socio-ecological systems may be able to resist and recover from some extreme events, small changes in their frequency or magnitude may not allow the system to persist. In addition, the current system state interacts with the specific timing of a shock event. 
+
+We also found that the temporal variability in coral cover was highest for intermediate levels of disturbance (Fig. \ref{fig:variability}). We do not know of past empirical work that has showed this same pattern. However, past work has indicated the some fish communities had greatest variability during moderate El Nino events [@Possamai2018]. Accounting for variability is important for how we interpret and predict recoveries from extreme events and how we assess management actions [@White2019b;@hopf2023]. For example, if restoration efforts are in place to grow more corals, the line between success and failure may have a lot to do with the natural variability of the system. Thus, in systems with intermediate levels of disturbance, which is likely most systems, we will see high variance in outcomes of responses to disturbances and management. In addition, we see regions of parameter space at high levels of disturbance where no increase in coral cover or conservation could recover the system (Fig. \ref{fig:mainresult}). 
+
+
+We also examined potential trade offs between ecosystem health and harvesting (Fig. \ref{fig:paretto}). Past work in fisheries has indicated there is often, but not always, a tradeoff between conservation and fisheries or if spillover is possible [@DiLorenzo2020;@Chollett2017]. However, other work suggests that optimal management strategies differ in cases when disturbances are included [@White2021d;@Aalto2019;@Milne2022a]. Generally, we found that when coral cover was high, parrotfish catch was also high (Fig. \ref{fig:paretto}). Both conservation and fisheries generally performed best in situations with low levels of extreme events, but coral cover was maximized at intermediate exposures to bleaching or hurricane events (Fig. \ref{fig:paretto}). 
+
+There are a number of important limitations of our study. Our pair of models are relatively simple with a only two or five equations representing the entire socio-ecological system. Future work could include additional species interactions, such as other predators or specific species of benthic cover taxa. We also only include static parameters, ignoring seasonal [@White2020d] or long-term changes [@Garcia-Carreras2013] in parameter values. In addition to this structural uncertainty, we also relied on parameter estimates from past work and a generalized systems [@Mumby2007;@Bauch2016;@Thampi2018] that were not designed specific to our set of models. Currently, the social dynamics of the are determined by a single state variable measuring community buy-in, in terms of the fraction of individuals willing to stop harvesting, over time. However, this is extremely limiting given it assumes a binary response of individuals in terms of harvesting. This oversimplifies the real context of most situations. For example, many fisheries involve a small group of people that are actually involved in decision-making [@Gurney2019;@Baker-Medard2021]. In addition, there are often gender, or other social stratification, in access to resources [@Baker-Medard2017;@Stacey2019]. Our model includes shocks, but does not contain any other forms of stochasticity, e.g., demographic or environmental variation [@Melbourne2008]. In addition, our state variables often reached very low levels of benthic cover where Allee effects could ultimately take over. Past work has shown that shocks can interact with Allee effects to alter management outcomes [@White2020i]. Our model also only considers a single location with implicit spatial dynamics through benthic competition. We know from past work [@White2020i;@Milne2022a] that the interaction between shocks and spatial ecology can be important in studying how systems are able to recover after a shock event. Specifically, shock events that are too frequent or affect an entire system simultaneously will lead to a population collapse. However, spatial patterning in the shock events can allow a system to persist via connectivity. Future work on other socio-ecological systems is also needed to explore the generality of our findings.
+
+
+
+# Conclusions
+
+Shocks can reshape ecological and socio-economic systems, leading to unfavorable states. We found that in coupled socio-ecological systems, counter-intuitive responses may emerge due to internal feedbacks. For example, a temporary increase in forest or coral mortality resulted in more conservationists, reducing harvesting pressure and promoting coral recovery. Predicting shock effects requires considering the specific ecological and social context preceding the event. Adequate conservationists can facilitate coral reef recovery post-shock. Timing and magnitude significantly impact system outcomes, causing high variability in coral cover for moderately disturbed systems. This variability suggests that management outcomes are likely to be unpredictable for most systems. Future work should incorporate more ecological and social nuances, tailor models to specific systems, and explore how socio-ecological dynamics respond to increased extreme events from climate change.
+
+
+# Acknowledgments
+
+This research was supported by NSF grant #1923707. We would like to thank M. Baker-Medard and J. Saltzman for feedback that improved the manuscript. The code used in this paper is available at: https://github.com/QuantMarineEcoLab/socio-eco-shocks. 
+
+
+
+
+
+<!--
+\pagebreak
+
+# SM
+
+\begin{center}
+\textbf{\Large Supplemental material for: \\ Extreme events and coupled socio-ecological systems}
+	
+\textsc{Easton R. White$^{*}$ and Sophie Wulfing}
+\vspace{3 mm}
+
+\normalsize{\indent Department of Biological Sciences, University of New Hampshire, 03824, NH, USA}
+
+
+$\text{*}$ Corresponding author: Easton R. White (Easton.White@unh.edu)
+
+\end{center}
+
+\vspace{3 mm}
+
+\renewcommand{\thepage}{S\arabic{page}} 
+\renewcommand{\thesection}{S\arabic{section}}  
+\renewcommand{\thetable}{S\arabic{table}}  
+\renewcommand{\thefigure}{S\arabic{figure}}
+\setcounter{table}{0}
+\setcounter{figure}{0}
+\setcounter{section}{0}
+\setcounter{page}{0}
+
+\pagebreak
+
+
+
+# Coral reef fisheries parameter sensitivity
+
+For each parameter, plot coral cover/persistence versus that parameter. I could do this for a bunch of disturbance regimes or pick some intermediate disturbance pattern and runs a lot of sims...
+
+
+```{r d_sensitivity, fig.cap='Cumulative coral cover for different combinations of the disturbance probability and coral mortality (d).'}
+
+parameter_name = 'd'
+
+sensitivity_plot <- function(parameter_name){
+param_sensitivity <- read.csv(file = paste('model_output/',parameter_name,'_sensitivity.csv',sep=''),header=T)
+
+
+ggplot(data =  param_sensitivity , aes(x=parameter_to_test,y=coral_cover, color=as.factor(dist_freq_vec), group=dist_freq_vec)) + 
+  geom_point() + theme_classic() + geom_smooth() + ylab('Coral cover') + xlab(parameter_name) + labs(color='Disturbance probability') + scale_color_viridis(discrete = TRUE, begin = 0.1, end=0.9)
+}
+
+sensitivity_plot('d')
+
+```
+
+```{r j_sensitivity, fig.cap='Cumulative coral cover for different combinations of the disturbance probability and sensitivity of individuals to coral cover (J).'}
+
+sensitivity_plot('j')
+
+```
+
+```{r sigma_sensitivity, fig.cap='Cumulative coral cover for different combinations of the disturbance probability and the maximum fishing rate ($\\sigma$).'}
+
+sensitivity_plot('sigma')
+
+```
+
+```{r phi_sensitivity, fig.cap='Cumulative coral cover for different combinations of the disturbance probability and the injunctive social norms term ($\\phi$).'}
+
+sensitivity_plot('phi')
+
+```
+
+```{r kappa_sensitivity, fig.cap='Cumulative coral cover for different combinations of the disturbance probability and the social learning rate ($\\kappa$). '}
+
+sensitivity_plot('kappa')
+
+```
+
+
+\pagebreak
+
+
+-->
+
+
+
+
+```{r, echo=F}
+# Create .bib file of the R packages I use in the paper
+#knitr::write_bib(c(.packages(), "deSolve"), "packages.bib")
+```
